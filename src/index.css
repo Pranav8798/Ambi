@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=Inter:wght@300;400;500&display=swap');
+@import "tailwindcss";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  background: #04040a;
+  color: #fff;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Noise texture overlay ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ─── Selection ─── */
+::selection { background: rgba(168, 85, 247, 0.3); color: #fff; }
+
+/* ─── Keyframe Animations ─── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(1deg); }
+  66% { transform: translateY(-4px) rotate(-1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(168,85,247,0.3), 0 0 60px rgba(168,85,247,0.1); }
+  50% { box-shadow: 0 0 40px rgba(168,85,247,0.5), 0 0 80px rgba(168,85,247,0.2), 0 0 120px rgba(236,72,153,0.1); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-slow-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes ticker-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes particle-drift {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-120px) translateX(var(--dx, 20px)) scale(0); opacity: 0; }
+}
+
+@keyframes bg-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+}
+
+/* ─── Utility classes ─── */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.glass-strong {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #fff 0%, #c4b5fd 40%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-active {
+  background: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #f97316 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+.btn-glow-purple {
+  box-shadow: 0 0 0 0 rgba(168,85,247,0);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.btn-glow-purple:hover {
+  box-shadow: 0 0 20px rgba(168,85,247,0.4), 0 0 40px rgba(168,85,247,0.1);
+}
+.btn-glow-purple:active {
+  transform: scale(0.92);
+}
+
+.btn-glow-red {
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.btn-glow-red:active {
+  transform: scale(0.92);
+  box-shadow: 0 0 30px rgba(239,68,68,0.5);
+}
+
+.orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  animation: spin-slow linear infinite;
+}
+
+.orb-ring-reverse {
+  animation: spin-slow-reverse linear infinite;
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(168,85,247,0.8);
+  animation: particle-drift 3s ease-in-out infinite;
+}
+
+/* ─── Waveform bars ─── */
+.wave-bar {
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to top, rgba(236,72,153,0.9), rgba(168,85,247,0.9), rgba(99,102,241,0.9));
+  transform-origin: bottom center;
+}
+
+/* ─── Transcription text ─── */
+.transcription-text {
+  font-size: clamp(1rem, 4vw, 1.4rem);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 0 30px rgba(168,85,247,0.3);
+  animation: ticker-fade-in 0.4s ease forwards;
+}
+
+/* ─── Status pill ─── */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  user-select: none;
+}
+
+/* ─── YT Overlay close button ─── */
+#yt-overlay button:hover {
+  background: rgba(255,255,255,0.25) !important;
+  transform: scale(1.05);
+}

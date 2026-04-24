@@ -1,0 +1,5 @@
+{
+  "name": "AMBI - Your Witty AI Companion",
+  "description": "A real-time voice-based AI assistant with a distinct, sassy personality. AMBI can talk, teach, and understand images in a natural, conversational way.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
