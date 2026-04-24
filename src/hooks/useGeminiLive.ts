@@ -136,7 +136,7 @@ export function useGeminiLive() {
     connectingRef.current = true;
     try {
       const session = await ai.live.connect({
-        model: "models/gemini-2.0-flash-exp",
+        model: "models/gemini-1.5-flash",
         config: {
           systemInstruction: ANAZ_SYSTEM_INSTRUCTION,
           responseModalities: [Modality.AUDIO],
