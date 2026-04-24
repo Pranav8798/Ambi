@@ -149,10 +149,10 @@ export function useGeminiLive() {
             setError(null);
             console.log("Connected to Gemini Live");
           },
-          onclose: () => {
+          onclose: (event: any) => {
             setIsConnected(false);
             stopAudio();
-            console.log("Disconnected from Gemini Live");
+            console.log("Disconnected from Gemini Live. Reason:", event?.reason || "No reason provided", "Code:", event?.code);
           },
           onerror: (err: any) => {
             console.error("Gemini Live Connection Error:", err);
@@ -162,7 +162,10 @@ export function useGeminiLive() {
             if (message.inputAudioTranscription?.text) {
               const text = message.inputAudioTranscription.text.toLowerCase();
               setLastTranscription(message.inputAudioTranscription.text);
-              if (text.includes("ambi")) { isAwakeRef.current = true; setIsAwake(true); }
+              if (text.includes("ambi")) { 
+                isAwakeRef.current = true; 
+                setIsAwake(true); 
+              }
             }
             if (message.serverContent?.modelTurn?.parts && isAwakeRef.current) {
               let textChunk = "";
@@ -194,6 +197,41 @@ export function useGeminiLive() {
     }
   }, [handleToolCall, playNextChunk, stopAudio, isConnected]);
 
+  const startRecording = useCallback(async () => {
+    if (!isConnected || !sessionRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      }
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+      processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) sum += inputData[i] * inputData[i];
+        setVolume(Math.sqrt(sum / inputData.length));
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+        }
+        try {
+          if (sessionRef.current && isConnected) {
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+            sessionRef.current.sendRealtimeInput({
+              audio: { data: base64, mimeType: 'audio/pcm;rate=16000' }
+            });
+          }
+        } catch (err) { console.error("Error sending audio input:", err); }
+      };
+      source.connect(processor);
+      processor.connect(audioContextRef.current.destination);
+      setIsRecording(true);
+    } catch (err) { setError("Microphone access denied."); }
+  }, [isConnected]);
+
   useEffect(() => {
     if (!isConnected || !isLocal) return;
     const eventSource = new EventSource('http://localhost:4000/stream');
@@ -207,5 +245,21 @@ export function useGeminiLive() {
     return () => eventSource.close();
   }, [isConnected, isLocal]);
 
-  return { isConnected, isRecording, isAwake, lastTranscription, ambiTextResponse, volume, error, connect, disconnect: () => { stopAudio(); sessionRef.current?.close(); setIsConnected(false); }, startRecording: stopAudio, stopRecording: stopAudio, sendVideoFrame: () => {}, sendText: () => {}, setAmbiTextResponse, toggleAwake: () => { isAwakeRef.current = !isAwakeRef.current; setIsAwake(isAwakeRef.current); } };
+  return { 
+    isConnected, 
+    isRecording, 
+    isAwake, 
+    lastTranscription, 
+    ambiTextResponse, 
+    volume, 
+    error, 
+    connect, 
+    disconnect: () => { stopAudio(); sessionRef.current?.close(); setIsConnected(false); }, 
+    startRecording, 
+    stopRecording: stopAudio, 
+    sendVideoFrame: () => {}, 
+    sendText: () => {}, 
+    setAmbiTextResponse, 
+    toggleAwake: () => { isAwakeRef.current = !isAwakeRef.current; setIsAwake(isAwakeRef.current); } 
+  };
 }
