@@ -135,8 +135,9 @@ export function useGeminiLive() {
     if (connectingRef.current || isConnected) return;
     connectingRef.current = true;
     try {
-      const session = await ai.live.connect({
-        model: "models/gemini-1.5-flash",
+      // Force v1alpha for Multimodal Live support
+      const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" }, { apiVersion: "v1alpha" });
+      const session = await (model as any).live.connect({
         config: {
           systemInstruction: ANAZ_SYSTEM_INSTRUCTION,
           responseModalities: [Modality.AUDIO],
