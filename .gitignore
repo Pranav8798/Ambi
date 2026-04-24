@@ -15,7 +15,9 @@ build/
 !.env.example
 
 # WhatsApp Bot Session
+whatsapp-bot/wa_session/
 whatsapp-bot/wa_auth_session/
+whatsapp-bot/.wwebjs_cache/
 whatsapp-bot/exclusions.json
 
 # Telegram Bot Session
