@@ -116,14 +116,17 @@ app.get("/api/youtube-search", async (req, res) => {
   }
 });
 
-// Serve static files from dist in production
-if (process.env.NODE_ENV === "production") {
-  const distPath = path.join(__dirname, "dist");
-  app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-}
+// Simple CORS for all routes
+app.use((_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API Server running on http://localhost:${PORT}`);
