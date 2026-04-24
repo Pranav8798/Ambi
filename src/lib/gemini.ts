@@ -1,6 +1,8 @@
 import { GoogleGenAI, FunctionDeclaration, Type } from "@google/genai";
 
-const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '') || '';
+const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+console.log("Gemini API Key loaded:", apiKey ? `Found (${apiKey.substring(0, 5)}...)` : "NOT FOUND! Check Vercel Settings.");
+
 export const ai = new GoogleGenAI({ apiKey });
 
 
