@@ -144,8 +144,20 @@ export function useGeminiLive() {
           tools: [{ functionDeclarations: [openWebsiteTool, searchTool, getDateTimeTool, playMusicTool, sendWhatsAppMessageTool, initiateCallTool] }],
         },
         callbacks: {
-          onopen: () => setIsConnected(true),
-          onclose: () => { setIsConnected(false); stopAudio(); },
+          onopen: () => {
+            setIsConnected(true);
+            setError(null);
+            console.log("Connected to Gemini Live");
+          },
+          onclose: () => {
+            setIsConnected(false);
+            stopAudio();
+            console.log("Disconnected from Gemini Live");
+          },
+          onerror: (err: any) => {
+            console.error("Gemini Live Connection Error:", err);
+            setError(`Error: ${err.message || "Connection failed"}`);
+          },
           onmessage: (message: any) => {
             if (message.inputAudioTranscription?.text) {
               const text = message.inputAudioTranscription.text.toLowerCase();
@@ -174,7 +186,12 @@ export function useGeminiLive() {
         }
       });
       sessionRef.current = session;
-    } catch (err) { setError("Failed to connect."); } finally { connectingRef.current = false; }
+    } catch (err: any) {
+      console.error("Failed to connect:", err);
+      setError(`Failed to connect: ${err.message || "Check your API key"}`);
+    } finally {
+      connectingRef.current = false;
+    }
   }, [handleToolCall, playNextChunk, stopAudio, isConnected]);
 
   useEffect(() => {
