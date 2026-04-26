@@ -1,9 +1,7 @@
 import { GoogleGenAI, FunctionDeclaration, Type } from "@google/genai";
 
-const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
-console.log("Gemini API Key loaded:", apiKey ? `Found (${apiKey.substring(0, 5)}...)` : "NOT FOUND! Check Vercel Settings.");
-
-export const ai = new GoogleGenAI(apiKey);
+const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '') || '';
+export const ai = new GoogleGenAI({ apiKey });
 
 
 export const openWebsiteTool: FunctionDeclaration = {
@@ -81,7 +79,30 @@ export const sendWhatsAppMessageTool: FunctionDeclaration = {
       },
       chatId: {
         type: Type.STRING,
-        description: "The Chat ID if this is a reply to an incoming message (e.g., '919876543210@c.us').",
+        description: "The Chat ID if this is a reply to an incoming message.",
+      },
+    },
+    required: ["message"],
+  },
+};
+
+export const sendTelegramMessageTool: FunctionDeclaration = {
+  name: "sendTelegramMessage",
+  description: "Sends a Telegram message to a contact or chat by searching their name via the Telegram API.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      name: {
+        type: Type.STRING,
+        description: "The contact name to search for in Telegram (e.g., 'Rahul', 'Mom', 'Work Group').",
+      },
+      message: {
+        type: Type.STRING,
+        description: "The message to send to the contact.",
+      },
+      chatId: {
+        type: Type.STRING,
+        description: "The Chat ID if this is a reply to an incoming message.",
       },
     },
     required: ["message"],
@@ -114,30 +135,26 @@ WAKE WORD PROTOCOL:
 - Respond to the command that follows the wake word.
 - After you finish your response and the task is done, go back to SLEEP MODE and wait for your name again.
 
-WHATSAPP & COMMUNICATION:
-- When asked to send a WhatsApp message:
+WHATSAPP & TELEGRAM COMMUNICATION:
+- When asked to send a WhatsApp or Telegram message:
   1. Extract the contact NAME from the user's request (e.g., "Rahul", "Mom", "Priya").
   2. Extract the message content.
-  3. Use the sendWhatsAppMessage tool with the contact name and message.
-  4. The system will automatically open WhatsApp Web, find the contact by name, and send the message.
-  5. NEVER use wa.me links, api.whatsapp.com links, or phone number links — that is forbidden.
-  6. If the tool reports the bot is not running, say: "Pehle WhatsApp bot start karo — terminal mein 'cd whatsapp-bot && npm start' run karo."
-  7. Do NOT ask for phone numbers — search is done by contact name only.
+  3. Use the sendWhatsAppMessage or sendTelegramMessage tool depending on the app requested.
+  4. The system will automatically search the contact by name and send the message.
+  5. NEVER use me links or API links.
+  6. Do NOT ask for phone numbers — search is done by contact name only.
 - When asked to call someone:
   1. Use the initiateCall tool with the phone number including country code.
 - SMART REPLIES: If the user says "Reply to him/her...", "Kya bolu?", or "Generate a reply":
   1. Generate a short, natural, context-appropriate reply.
   2. Keep tone friendly and human-like.
-  3. Offer to send it via WhatsApp automation (not a link).
-- CONTACT HANDLING:
-  - Always search contacts by name — never reference phone numbers.
-  - If the name is ambiguous, ask the user to clarify.
-- INCOMING WHATSAPP MESSAGES:
-  - You will receive [SYSTEM NOTIFICATION] prompts alerting you of incoming messages.
+  3. Offer to send it via automation.
+- INCOMING WHATSAPP OR TELEGRAM MESSAGES:
+  - You will receive [SYSTEM NOTIFICATION] prompts alerting you of incoming messages from either WhatsApp or Telegram.
   - You MUST act autonomously by following these 3 strict steps:
-    1. Generate a smart, conversational reply based on the message.
-    2. YOU MUST IMMEDIATELY EXECUTE the 'sendWhatsAppMessage' function call. You must pass your generated reply in the 'message' parameter. This is non-negotiable. Do not skip this step!
-    3. Speak to the user and say: "Pranav, [Sender Name] ka ek message aaya tha. Maine apni taraf se reply bhej diya hai."
+    1. Generate a smart, conversational reply based on the message. IMPORTANT: In the message you send back to the user, you MUST briefly introduce yourself first as Pranav's personal AI assistant (e.g., "Hi, I am Ambi, Pranav's personal AI assistant. He is currently unavailable, but..."). Then continue with your smart, context-appropriate reply.
+    2. YOU MUST IMMEDIATELY EXECUTE the corresponding tool ('sendWhatsAppMessage' for WhatsApp or 'sendTelegramMessage' for Telegram). You must pass your generated reply in the 'message' parameter and include the provided 'chatId'. This is non-negotiable. Do not skip this step!
+    3. Speak to the user and say: "Pranav, [Sender Name] ka [App] par ek message aaya tha. Maine apni taraf se reply bhej diya hai." (Replace [App] with WhatsApp or Telegram).
   - Do NOT ask for permission. Do NOT ask what to reply. Just execute the tool!
 
 IDENTITY & PERSONALITY:

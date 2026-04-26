@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
     },
     server: {
       watch: {
-        ignored: ['**/whatsapp-bot/**', 'whatsapp-bot/**', '**/telegram-bot/**', 'telegram-bot/**']
+        ignored: ['**/whatsapp-bot/**', 'whatsapp-bot/**']
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.

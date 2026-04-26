@@ -1,12 +1,27 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
+// Import WA and TG bots
+const { sendWhatsAppMessage, messageEmitter: waEmitter, introducedContacts: waContacts } = require('./whatsapp-bot/index.js');
+const { initClient: initTelegram, sendTelegramMessage, messageEmitter: tgEmitter, introducedContacts: tgContacts } = require('./telegram-bot/index.js');
+
+// Initialize Telegram Client
+initTelegram().catch((err: any) => console.error('[API] ❌ Failed to initialize Telegram client:', err));
+
+app.use(express.json());
+
+let webVisits = 0;
 
 // Allow CORS so Vite dev server (port 5173) can call this API
 app.use((_req, res, next) => {
@@ -72,7 +87,7 @@ app.get("/api/youtube-search", async (req, res) => {
         // Find matching closing brace (balanced)
         let depth = 0;
         let end = braceIdx;
-        for (let i = braceIdx; i < Math.min(html.length, braceIdx + 800_000); i++) {
+        for (let i = braceIdx; i < Math.min(html.length, braceIdx + 2_000_000); i++) {
           if (html[i] === "{") depth++;
           else if (html[i] === "}") {
             depth--;
@@ -116,17 +131,98 @@ app.get("/api/youtube-search", async (req, res) => {
   }
 });
 
-// Simple CORS for all routes
-app.use((_req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  next();
+// API Route to register a web visit
+app.post("/api/visit", (req, res) => {
+  webVisits++;
+  res.json({ success: true, total: webVisits });
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+// API Route for Admin Stats
+app.get("/api/admin/stats", (req, res) => {
+  const cpus = os.cpus();
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  
+  // Calculate average CPU load across all cores
+  let totalIdle = 0;
+  let totalTick = 0;
+  for (const core of cpus) {
+    for (const type in core.times) {
+      totalTick += (core.times as any)[type];
+    }
+    totalIdle += core.times.idle;
+  }
+  const cpuLoad = 100 - ~~(100 * totalIdle / totalTick);
+  
+  res.json({
+    cpuLoad, // Percentage
+    totalMem, // Bytes
+    freeMem,  // Bytes
+    usedMem: totalMem - freeMem,
+    webVisits, // Count
+  });
 });
+
+
+// ==========================================
+// WhatsApp Bot Unified Routes
+// ==========================================
+app.post('/whatsapp/send', async (req, res) => {
+  const { name, message, chatId } = req.body;
+  if (!name || !message) {
+    return res.status(400).json({ success: false, error: 'Both "name" and "message" fields are required.' });
+  }
+  console.log(`[Unified] /whatsapp/send → name: "${name}", message: "${message}", chatId: "${chatId || 'none'}"`);
+  const result = await sendWhatsAppMessage(name, message, chatId);
+  res.json(result);
+});
+
+app.get('/whatsapp/stream', (req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  res.write('data: {"status": "connected"}\n\n');
+  const onMessage = (msg: any) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
+  waEmitter.on('new_message', onMessage);
+  req.on('close', () => waEmitter.off('new_message', onMessage));
+});
+
+app.get('/whatsapp/stats', (req, res) => {
+  res.json({ usersReached: waContacts.size });
+});
+
+// ==========================================
+// Telegram Bot Unified Routes
+// ==========================================
+app.post('/telegram/send', async (req, res) => {
+  const { name, message, chatId } = req.body;
+  if (!name && !chatId) return res.status(400).json({ success: false, message: 'Name or chatId is required' });
+  if (!message) return res.status(400).json({ success: false, message: 'Message is required' });
+  
+  console.log(`[Unified] Received request to send Telegram message to: ${name || chatId}`);
+  const result = await sendTelegramMessage(name, message, chatId);
+  if (result.success) res.json(result);
+  else res.status(500).json(result);
+});
+
+app.get('/telegram/stream', (req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  res.write(`data: ${JSON.stringify({ status: 'connected' })}\n\n`);
+  const handleNewMessage = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  tgEmitter.on('new_message', handleNewMessage);
+  req.on('close', () => tgEmitter.off('new_message', handleNewMessage));
+});
+
+app.get('/telegram/stats', (req, res) => {
+  res.json({ usersReached: tgContacts.size });
+});
+
+// Serve static files from dist in production
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.join(__dirname, "dist");
+  app.use(express.static(distPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API Server running on http://localhost:${PORT}`);

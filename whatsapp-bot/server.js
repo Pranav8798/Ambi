@@ -7,7 +7,7 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-const { sendWhatsAppMessage, messageEmitter } = require('./index');
+const { sendWhatsAppMessage, messageEmitter, introducedContacts } = require('./index');
 const { parseWhatsAppCommand, buildCommand } = require('./parser');
 
 const app = express();
@@ -58,6 +58,13 @@ app.post('/send', async (req, res) => {
   console.log(`[API] /send → name: "${name}", message: "${message}", chatId: "${chatId || 'none'}"`);
   const result = await sendWhatsAppMessage(name, message, chatId);
   return res.json(result);
+});
+
+// ─────────────────────────────────────────────
+// GET /stats
+// ─────────────────────────────────────────────
+app.get('/stats', (req, res) => {
+  res.json({ usersReached: introducedContacts.size });
 });
 
 // ─────────────────────────────────────────────
