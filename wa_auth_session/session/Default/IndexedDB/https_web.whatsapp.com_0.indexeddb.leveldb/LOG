@@ -1,0 +1,32 @@
+2026/04/27-06:42:19.288 1b78 Creating DB C:\xampp\htdocs\Ambi\wa_auth_session\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb since it was missing.
+2026/04/27-06:42:20.845 1b78 Reusing MANIFEST C:\xampp\htdocs\Ambi\wa_auth_session\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/04/27-06:45:07.256 1b78 Level-0 table #5: started
+2026/04/27-06:45:07.623 1b78 Level-0 table #5: 1014800 bytes OK
+2026/04/27-06:45:07.666 1b78 Delete type=0 #3
+2026/04/27-06:45:13.083 f50 Level-0 table #7: started
+2026/04/27-06:45:13.505 f50 Level-0 table #7: 1072835 bytes OK
+2026/04/27-06:45:13.571 f50 Delete type=0 #4
+2026/04/27-06:45:13.752 1b78 Compacting 1@1 + 1@2 files
+2026/04/27-06:45:14.556 1b78 Generated table #8@1: 25311 keys, 997588 bytes
+2026/04/27-06:45:14.557 1b78 Compacted 1@1 + 1@2 files => 997588 bytes
+2026/04/27-06:45:14.644 1b78 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/04/27-06:45:14.645 1b78 Delete type=2 #5
+2026/04/27-06:45:14.645 1b78 Delete type=2 #7
+2026/04/27-06:45:55.086 1b78 Level-0 table #10: started
+2026/04/27-06:45:55.370 1b78 Level-0 table #10: 1135652 bytes OK
+2026/04/27-06:45:55.413 1b78 Delete type=0 #6
+2026/04/27-06:45:55.431 1b78 Compacting 1@1 + 1@2 files
+2026/04/27-06:45:55.766 1b78 Generated table #11@1: 36082 keys, 1445133 bytes
+2026/04/27-06:45:55.766 1b78 Compacted 1@1 + 1@2 files => 1445133 bytes
+2026/04/27-06:45:55.810 1b78 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/04/27-06:45:55.811 1b78 Delete type=2 #8
+2026/04/27-06:45:55.811 1b78 Delete type=2 #10
+2026/04/27-09:34:57.159 1b78 Level-0 table #13: started
+2026/04/27-09:34:57.344 1b78 Level-0 table #13: 1127327 bytes OK
+2026/04/27-09:34:57.379 1b78 Delete type=0 #9
+2026/04/27-09:35:13.447 f50 Compacting 1@1 + 1@2 files
+2026/04/27-09:35:13.913 f50 Generated table #14@1: 41639 keys, 1646789 bytes
+2026/04/27-09:35:13.914 f50 Compacted 1@1 + 1@2 files => 1646789 bytes
+2026/04/27-09:35:13.943 f50 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/04/27-09:35:13.943 f50 Delete type=2 #11
+2026/04/27-09:35:13.944 f50 Delete type=2 #13
