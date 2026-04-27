@@ -9,15 +9,33 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const RUN_BOTS = process.env.RUN_BOTS === 'true';
+
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
-// Import WA and TG bots
-const { sendWhatsAppMessage, messageEmitter: waEmitter, introducedContacts: waContacts } = require('./whatsapp-bot/index.js');
-const { initClient: initTelegram, sendTelegramMessage, messageEmitter: tgEmitter, introducedContacts: tgContacts } = require('./telegram-bot/index.js');
+// Conditionally import bots
+let sendWhatsAppMessage: any, waEmitter: any, waContacts: any;
+let initTelegram: any, sendTelegramMessage: any, tgEmitter: any, tgContacts: any;
 
-// Initialize Telegram Client
-initTelegram().catch((err: any) => console.error('[API] ❌ Failed to initialize Telegram client:', err));
+if (RUN_BOTS) {
+  console.log('[Server] 🤖 RUN_BOTS=true → Loading WhatsApp and Telegram bots...');
+  const wa = require('./whatsapp-bot/index.js');
+  sendWhatsAppMessage = wa.sendWhatsAppMessage;
+  waEmitter = wa.messageEmitter;
+  waContacts = wa.introducedContacts;
+
+  const tg = require('./telegram-bot/index.js');
+  initTelegram = tg.initClient;
+  sendTelegramMessage = tg.sendTelegramMessage;
+  tgEmitter = tg.messageEmitter;
+  tgContacts = tg.introducedContacts;
+
+  // Initialize Telegram Client
+  initTelegram().catch((err: any) => console.error('[API] ❌ Telegram init failed:', err));
+} else {
+  console.log('[Server] ⏭️  RUN_BOTS=false → Skipping bots (Render-only mode).');
+}
 
 app.use(express.json());
 
@@ -163,57 +181,53 @@ app.get("/api/admin/stats", (req, res) => {
   });
 });
 
-
 // ==========================================
-// WhatsApp Bot Unified Routes
+// WhatsApp & Telegram Routes (Only if RUN_BOTS=true)
 // ==========================================
-app.post('/whatsapp/send', async (req, res) => {
-  const { name, message, chatId } = req.body;
-  if (!name || !message) {
-    return res.status(400).json({ success: false, error: 'Both "name" and "message" fields are required.' });
-  }
-  console.log(`[Unified] /whatsapp/send → name: "${name}", message: "${message}", chatId: "${chatId || 'none'}"`);
-  const result = await sendWhatsAppMessage(name, message, chatId);
-  res.json(result);
-});
+if (RUN_BOTS) {
+  app.post('/whatsapp/send', async (req, res) => {
+    const { name, message, chatId } = req.body;
+    if (!name || !message) {
+      return res.status(400).json({ success: false, error: 'Both "name" and "message" fields are required.' });
+    }
+    console.log(`[Unified] /whatsapp/send → name: "${name}", chatId: "${chatId || 'none'}"`);
+    const result = await sendWhatsAppMessage(name, message, chatId);
+    res.json(result);
+  });
 
-app.get('/whatsapp/stream', (req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
-  res.write('data: {"status": "connected"}\n\n');
-  const onMessage = (msg: any) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
-  waEmitter.on('new_message', onMessage);
-  req.on('close', () => waEmitter.off('new_message', onMessage));
-});
+  app.get('/whatsapp/stream', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+    res.write('data: {"status": "connected"}\n\n');
+    const onMessage = (msg: any) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
+    waEmitter.on('new_message', onMessage);
+    req.on('close', () => waEmitter.off('new_message', onMessage));
+  });
 
-app.get('/whatsapp/stats', (req, res) => {
-  res.json({ usersReached: waContacts.size });
-});
+  app.get('/whatsapp/stats', (req, res) => {
+    res.json({ usersReached: waContacts.size });
+  });
 
-// ==========================================
-// Telegram Bot Unified Routes
-// ==========================================
-app.post('/telegram/send', async (req, res) => {
-  const { name, message, chatId } = req.body;
-  if (!name && !chatId) return res.status(400).json({ success: false, message: 'Name or chatId is required' });
-  if (!message) return res.status(400).json({ success: false, message: 'Message is required' });
-  
-  console.log(`[Unified] Received request to send Telegram message to: ${name || chatId}`);
-  const result = await sendTelegramMessage(name, message, chatId);
-  if (result.success) res.json(result);
-  else res.status(500).json(result);
-});
+  app.post('/telegram/send', async (req, res) => {
+    const { name, message, chatId } = req.body;
+    if (!name && !chatId) return res.status(400).json({ success: false, message: 'Name or chatId is required' });
+    if (!message) return res.status(400).json({ success: false, message: 'Message is required' });
+    const result = await sendTelegramMessage(name, message, chatId);
+    if (result.success) res.json(result);
+    else res.status(500).json(result);
+  });
 
-app.get('/telegram/stream', (req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
-  res.write(`data: ${JSON.stringify({ status: 'connected' })}\n\n`);
-  const handleNewMessage = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-  tgEmitter.on('new_message', handleNewMessage);
-  req.on('close', () => tgEmitter.off('new_message', handleNewMessage));
-});
+  app.get('/telegram/stream', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+    res.write(`data: ${JSON.stringify({ status: 'connected' })}\n\n`);
+    const handleNewMessage = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+    tgEmitter.on('new_message', handleNewMessage);
+    req.on('close', () => tgEmitter.off('new_message', handleNewMessage));
+  });
 
-app.get('/telegram/stats', (req, res) => {
-  res.json({ usersReached: tgContacts.size });
-});
+  app.get('/telegram/stats', (req, res) => {
+    res.json({ usersReached: tgContacts.size });
+  });
+}
 
 // Serve static files from dist in production
 if (process.env.NODE_ENV === "production") {

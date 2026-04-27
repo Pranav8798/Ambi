@@ -298,8 +298,8 @@ export default function ANAZInterface() {
 
   /* Register Web Visit */
   useEffect(() => {
-    const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-    fetch(`${backendUrl}/api/visit`, { method: 'POST' }).catch(e => console.warn('Failed to record visit', e));
+    const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000';
+    fetch(`${apiUrl}/api/visit`, { method: 'POST' }).catch(e => console.warn('Failed to record visit', e));
   }, []);
 
   /* Hide hint after first connection */

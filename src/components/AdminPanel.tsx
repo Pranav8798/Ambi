@@ -35,15 +35,16 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
 
     const fetchStats = async () => {
       try {
-        const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
+        const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000';
+        const botsUrl = (import.meta as any).env.VITE_BOTS_URL || 'http://localhost:3000';
         
         // Main Server Stats
-        const serverRes = await fetch(`${backendUrl}/api/admin/stats`);
+        const serverRes = await fetch(`${apiUrl}/api/admin/stats`);
         if (serverRes.ok) setStats(await serverRes.json());
 
         // WA Bot Stats
         try {
-          const waRes = await fetch(`${backendUrl}/whatsapp/stats`);
+          const waRes = await fetch(`${botsUrl}/whatsapp/stats`);
           if (waRes.ok) setWaUsers((await waRes.json()).usersReached);
         } catch (e) {
           console.warn("WA Bot stats fetch failed", e);
@@ -51,7 +52,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
 
         // TG Bot Stats
         try {
-          const tgRes = await fetch(`${backendUrl}/telegram/stats`);
+          const tgRes = await fetch(`${botsUrl}/telegram/stats`);
           if (tgRes.ok) setTgUsers((await tgRes.json()).usersReached);
         } catch (e) {
           console.warn("TG Bot stats fetch failed", e);

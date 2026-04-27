@@ -261,8 +261,8 @@ export function useGeminiLive() {
                 console.log("Auto-injected chatId from last incoming message:", finalChatId);
             }
 
-            const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-            const botResponse = await fetch(`${backendUrl}/whatsapp/send`, {
+            const botsUrl = (import.meta as any).env.VITE_BOTS_URL || 'http://localhost:3000';
+            const botResponse = await fetch(`${botsUrl}/whatsapp/send`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -289,8 +289,8 @@ export function useGeminiLive() {
           } else {
             try {
               console.log(`Sending Telegram message to ${args.name || args.chatId}...`);
-              const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-              const botResponse = await fetch(`${backendUrl}/telegram/send`, {
+              const botsUrl = (import.meta as any).env.VITE_BOTS_URL || 'http://localhost:3000';
+              const botResponse = await fetch(`${botsUrl}/telegram/send`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: args.name, message: args.message, chatId: args.chatId })
@@ -532,8 +532,8 @@ export function useGeminiLive() {
     if (!isConnected) return; // Only listen if connected to Gemini
     
     console.log("Starting SSE listener for WhatsApp...");
-    const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-    const eventSource = new EventSource(`${backendUrl}/whatsapp/stream`);
+    const botsUrl = (import.meta as any).env.VITE_BOTS_URL || 'http://localhost:3000';
+    const eventSource = new EventSource(`${botsUrl}/whatsapp/stream`);
 
     eventSource.onmessage = async (event) => {
       try {
@@ -585,8 +585,8 @@ You MUST politely speak to the user to inform them: "Pranav, ${data.name} ka mes
     if (!isConnected) return;
     
     console.log("Starting SSE listener for Telegram...");
-    const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-    const eventSource = new EventSource(`${backendUrl}/telegram/stream`);
+    const botsUrl = (import.meta as any).env.VITE_BOTS_URL || 'http://localhost:3000';
+    const eventSource = new EventSource(`${botsUrl}/telegram/stream`);
 
     eventSource.onmessage = async (event) => {
       try {
