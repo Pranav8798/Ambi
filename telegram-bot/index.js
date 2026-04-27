@@ -15,11 +15,11 @@ const apiHash = process.env.TELEGRAM_API_HASH;
 
 if (!apiId || !apiHash) {
     console.error('[Telegram] ❌ Missing TELEGRAM_API_ID or TELEGRAM_API_HASH in .env');
-    process.exit(1);
+    // We don't exit the process so that the Express server and WhatsApp bot can still run
 }
 
 const sessionPath = path.join(__dirname, 'session.txt');
-let stringSession = new StringSession('');
+let stringSession = new StringSession(process.env.TELEGRAM_SESSION || '');
 if (fs.existsSync(sessionPath)) {
     stringSession = new StringSession(fs.readFileSync(sessionPath, 'utf8'));
 }
@@ -31,17 +31,31 @@ const client = new TelegramClient(stringSession, apiId, apiHash, {
 let isReady = false;
 
 async function initClient() {
+    if (!apiId || !apiHash) {
+        console.error('[Telegram] ❌ Cannot initialize: Missing TELEGRAM_API_ID or TELEGRAM_API_HASH in Render Env variables.');
+        return;
+    }
     console.log('[Telegram] 🚀 Initializing Telegram Client...');
-    await client.start({
-        phoneNumber: async () => '+917709664387',
-        password: async () => await input.text('Please enter your password (if 2FA enabled): '),
-        phoneCode: async () => await input.text('Please enter the code you received: '),
-        onError: (err) => console.log('[Telegram] ❌ Error:', err),
-    });
-
-    console.log('\n[Telegram] ✅ Client is ready and authenticated!');
-    fs.writeFileSync(sessionPath, client.session.save());
-    isReady = true;
+    try {
+        await client.start({
+            phoneNumber: async () => '+917709664387',
+            password: async () => '',
+            phoneCode: async () => {
+                if (process.env.RENDER) {
+                    throw new Error("Cannot enter phone code interactively on Render.");
+                }
+                return await input.text('Please enter the code you received: ');
+            },
+            onError: (err) => console.log('[Telegram] ❌ Error:', err),
+        });
+        
+        console.log('\n[Telegram] ✅ Client is ready and authenticated!');
+        fs.writeFileSync(sessionPath, client.session.save());
+        isReady = true;
+    } catch (err) {
+        console.error('[Telegram] ❌ Cannot authenticate. Please generate a session locally first or provide TELEGRAM_SESSION.');
+        return; // Return without crashing
+    }
 
     // Load exclusions if any (we can use the same exclusions.json concept as whatsapp)
     let exclusions = { ignoreGroups: true, ignoredContacts: [] };

@@ -27,6 +27,7 @@ console.log('[WhatsApp] 🚀 Initializing WhatsApp Client...');
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './wa_auth_session' }),
     puppeteer: {
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         headless: true, // Run headlessly
         args: [
             '--no-sandbox',
