@@ -229,6 +229,11 @@ if (RUN_BOTS) {
   });
 }
 
+// Health check endpoint (used by UptimeRobot / self-ping)
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
 // Serve static files from dist in production
 if (process.env.NODE_ENV === "production") {
   const distPath = path.join(__dirname, "dist");
@@ -241,4 +246,18 @@ if (process.env.NODE_ENV === "production") {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API Server running on http://localhost:${PORT}`);
   console.log(`   /api/youtube-search?q=<query>`);
+
+  // Self-ping every 10 minutes to prevent Render free tier sleep
+  if (process.env.RENDER) {
+    const SELF_URL = `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/api/health`;
+    setInterval(async () => {
+      try {
+        await fetch(SELF_URL);
+        console.log(`[KeepAlive] ✅ Pinged ${SELF_URL}`);
+      } catch (e) {
+        console.warn(`[KeepAlive] ❌ Ping failed:`, e);
+      }
+    }, 10 * 60 * 1000); // every 10 minutes
+    console.log(`[KeepAlive] 🔔 Self-ping enabled → ${SELF_URL}`);
+  }
 });

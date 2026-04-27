@@ -360,42 +360,32 @@ export function useGeminiLive() {
           onmessage: (message: any) => {
             // Log transcription for debugging
             if (message.inputAudioTranscription?.text) {
-              const text = message.inputAudioTranscription.text.toLowerCase();
+              const text = message.inputAudioTranscription.text;
               console.log("AMBI heard:", text);
-              setLastTranscription(message.inputAudioTranscription.text);
-              
-              const wakeWords = ["ambi", "hey ambi", "amby", "andy", "mb", "hello ambi"];
-              if (wakeWords.some(word => text.includes(word))) {
-                console.log("Wake word detected!");
-                isAwakeRef.current = true;
-                setIsAwake(true);
-              }
+              setLastTranscription(text);
             }
 
             if (message.serverContent?.modelTurn?.parts) {
-              // Only process response if the assistant is awake
-              if (isAwakeRef.current) {
-                let textChunk = "";
-                for (const part of message.serverContent.modelTurn.parts) {
-                  if (part.text) {
-                    textChunk += part.text;
-                  }
-                  if (part.inlineData?.data) {
-                    // Decode base64 PCM audio (16-bit, 24kHz)
-                    const binary = atob(part.inlineData.data);
-                    const bytes = new Uint8Array(binary.length);
-                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                    const pcm16 = new Int16Array(bytes.buffer);
-                    const float32 = new Float32Array(pcm16.length);
-                    for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768;
+              let textChunk = "";
+              for (const part of message.serverContent.modelTurn.parts) {
+                if (part.text) {
+                  textChunk += part.text;
+                }
+                if (part.inlineData?.data) {
+                  // Decode base64 PCM audio (16-bit, 24kHz)
+                  const binary = atob(part.inlineData.data);
+                  const bytes = new Uint8Array(binary.length);
+                  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                  const pcm16 = new Int16Array(bytes.buffer);
+                  const float32 = new Float32Array(pcm16.length);
+                  for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768;
 
-                    playbackQueueRef.current.push(float32);
-                    if (!isPlayingRef.current) playNextChunk();
-                  }
+                  playbackQueueRef.current.push(float32);
+                  if (!isPlayingRef.current) playNextChunk();
                 }
-                if (textChunk) {
-                  setAmbiTextResponse(prev => prev + textChunk);
-                }
+              }
+              if (textChunk) {
+                setAmbiTextResponse(prev => prev + textChunk);
               }
             }
 
